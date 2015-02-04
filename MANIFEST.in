@@ -1,0 +1,3 @@
+include data/all_atomic_ff_coeffs.txt
+include data/configurations.txt
+include data/elementNames.csv
