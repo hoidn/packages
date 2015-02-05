@@ -19,7 +19,7 @@ deleteChars = '\xe2\x80\x83'
 
 hklList = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [1, 1, 1], [2, 0, 0], [2, 1, 0], [2, 1, 1], [2, 2, 0], [2, 2, 1], [3, 0, 0], [3, 1, 0], [3, 1, 1], [2, 2, 2]]
 
-#positions of atoms of the two species
+#positions of atoms of the two species in the rock salt structure
 positions1 = ((0, 0, 0), (.5, .5, 0), (.5, 0, .5), (0, .5, .5))
 positions2 = ((.5, .5, .5), (.5, 0, 0), (0, .5, 0), (0, 0, 0.5))
 
@@ -129,7 +129,7 @@ def structFact(species, positions, latticeConst = 1):
     #form factor of a single species
     #q_hkl is momentum transfer magnitude in units of the 
     #reciprocal lattice constant
-    f = lambda q_hkl: getFofQ(species)(q_hkl * reciprocalLatticeConst)
+    f = lambda q_hkl: getFofQ(species)(np.array(q_hkl) * reciprocalLatticeConst)
     #function to evaluate amplitude contribution of a single atom
     def oneatom(formfactor, positions):
         return lambda qq: getPhase(positions, qq) * formfactor(map(np.linalg.norm, qq))
@@ -156,7 +156,7 @@ def heat(qTransfer, structfact, donor = 'F', sigma = 0.05):
     
     
     
-def normHKLs(charges, alkali = 'Li', halide = 'F', hkls = hklList, mode = 'amplitude'):
+def normHKLs(charges, alkali = 'Li', halide = None, hkls = hklList, mode = 'amplitude'):
     baseline = fccStruct(alkali, halide)
     if mode =='amplitude':
         mapFunc = lambda x: round(abs(x), 2)
@@ -167,7 +167,9 @@ def normHKLs(charges, alkali = 'Li', halide = 'F', hkls = hklList, mode = 'ampli
     #return map(normTable, formFactors)
     return formFactors
 
-def tableForm(charges, alkali = 'Li', halide = 'F', hkls = hklList, extracol = None, mode = 'amplitude'):
+def tableForm(charges, alkali = 'Li', halide = None, hkls = hklList, extracol = None, mode = 'amplitude'):
+    if halide is None:
+        print "computing scattering amplitudes for fcc structure with single-atom basis"
     f_hkls = normHKLs(charges, alkali = alkali, halide = halide, hkls = hkls, mode = mode)
     hklstrlist = hklString(hkls)
     if extracol != None:

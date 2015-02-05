@@ -19,7 +19,7 @@ deleteChars = '\xe2\x80\x83'
 
 hklList = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [1, 1, 1], [2, 0, 0], [2, 1, 0], [2, 1, 1], [2, 2, 0], [2, 2, 1], [3, 0, 0], [3, 1, 0], [3, 1, 1], [2, 2, 2]]
 
-#positions of atoms of the two species
+#positions of atoms of the two species in the rock salt structure
 positions1 = ((0, 0, 0), (.5, .5, 0), (.5, 0, .5), (0, .5, .5))
 positions2 = ((.5, .5, .5), (.5, 0, 0), (0, .5, 0), (0, 0, 0.5))
 
@@ -104,7 +104,7 @@ def gaussianCloud(charge, x, y, z, sigma):
         return np.array(map(tomap, qvec))
     return amplitude
 
-def fccStruct(a1, a2):
+def fccStruct(a1, a2 = None):
     """
     return function that evaluates the unit cell structure factor of 
     of an fcc material with two distinct species.
@@ -112,14 +112,24 @@ def fccStruct(a1, a2):
     terms of the reciprocal lattice basis vectors. 
 
     a1, a2: key strings for the elements
+    a2 == None corresponds to an fcc structure with a one-atom basis, 
+    rather than rock salt structure
     """
     part1 = structFact(a1, positions1)
-    part2 = structFact(a2, positions2)
-    return lambda x: part1(x) + part2(x)
+    if a2 is None:
+        return part1
+    else:
+        part2 = structFact(a2, positions2)
+        return lambda x: part1(x) + part2(x)
 
-def structFact(species, positions):
-    #form factors of the two species
-    f = getFofQ(species)
+def structFact(species, positions, latticeConst = 1):
+    if latticeConst ==1:
+        print "Warning: defaulting to 1 Angstrom for lattice constant"
+    reciprocalLatticeConst = 2 * np.pi / latticeConst
+    #form factor of a single species
+    #q_hkl is momentum transfer magnitude in units of the 
+    #reciprocal lattice constant
+    f = lambda q_hkl: getFofQ(species)(np.array(q_hkl) * reciprocalLatticeConst)
     #function to evaluate amplitude contribution of a single atom
     def oneatom(formfactor, positions):
         return lambda qq: getPhase(positions, qq) * formfactor(map(np.linalg.norm, qq))
@@ -146,7 +156,7 @@ def heat(qTransfer, structfact, donor = 'F', sigma = 0.05):
     
     
     
-def normHKLs(charges, alkali = 'Li', halide = 'F', hkls = hklList, mode = 'amplitude'):
+def normHKLs(charges, alkali = 'Li', halide = None, hkls = hklList, mode = 'amplitude'):
     baseline = fccStruct(alkali, halide)
     if mode =='amplitude':
         mapFunc = lambda x: round(abs(x), 2)
@@ -157,7 +167,9 @@ def normHKLs(charges, alkali = 'Li', halide = 'F', hkls = hklList, mode = 'ampli
     #return map(normTable, formFactors)
     return formFactors
 
-def tableForm(charges, alkali = 'Li', halide = 'F', hkls = hklList, extracol = None, mode = 'amplitude'):
+def tableForm(charges, alkali = 'Li', halide = None, hkls = hklList, extracol = None, mode = 'amplitude'):
+    if halide is None:
+        print "computing scattering amplitudes for fcc structure with single-atom basis"
     f_hkls = normHKLs(charges, alkali = alkali, halide = halide, hkls = hkls, mode = mode)
     hklstrlist = hklString(hkls)
     if extracol != None:
