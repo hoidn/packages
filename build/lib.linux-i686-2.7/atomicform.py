@@ -104,7 +104,7 @@ def gaussianCloud(charge, x, y, z, sigma):
         return np.array(map(tomap, qvec))
     return amplitude
 
-def fccStruct(a1, a2 = None):
+def fccStruct(a1, a2 = None, latticeConst = 1):
     """
     return function that evaluates the unit cell structure factor of 
     of an fcc material with two distinct species.
@@ -115,11 +115,11 @@ def fccStruct(a1, a2 = None):
     a2 == None corresponds to an fcc structure with a one-atom basis, 
     rather than rock salt structure
     """
-    part1 = structFact(a1, positions1)
+    part1 = structFact(a1, positions1, latticeConst = latticeConst)
     if a2 is None:
         return part1
     else:
-        part2 = structFact(a2, positions2)
+        part2 = structFact(a2, positions2, latticeConst = latticeConst)
         return lambda x: part1(x) + part2(x)
 
 def structFact(species, positions, latticeConst = 1):
@@ -140,7 +140,7 @@ def structFact(species, positions, latticeConst = 1):
     return amplitude
 
 
-def heat(qTransfer, structfact, donor = 'F', sigma = 0.05):
+def heat(qTransfer, structfact, donor = 'F', sigma = 0.05, latticeConst = 1):
     """
     qTransfer: amount of charge to move
     structFac: structure factor functions. 
@@ -149,28 +149,28 @@ def heat(qTransfer, structfact, donor = 'F', sigma = 0.05):
     """
     perBond = float(qTransfer)/len(bondingLocations)
     gaussians = map(lambda x: gaussianCloud(perBond, x[0], x[1], x[2], sigma), bondingLocations)
-    donors = structFact(donor, positions2)
+    donors = structFact(donor, positions2, latticeConst = latticeConst)
     donorCharge = donors([0, 0, 0])
     scale = float(qTransfer)/donorCharge
     return  (lambda x: (structfact(x) - scale * donors(x) + np.sum(np.array([gaussian(x) for gaussian in gaussians]), axis = 0)))
     
     
     
-def normHKLs(charges, alkali = 'Li', halide = None, hkls = hklList, mode = 'amplitude'):
-    baseline = fccStruct(alkali, halide)
+def normHKLs(charges, alkali = 'Li', halide = None, hkls = hklList, mode = 'amplitude', latticeConst = 1):
+    baseline = fccStruct(alkali, halide, latticeConst = latticeConst)
     if mode =='amplitude':
         mapFunc = lambda x: round(abs(x), 2)
     elif mode =='intensity':
         mapFunc = lambda x: round(abs(x)**2, 2)
-    formFactors = np.array([map(mapFunc, heat(z, baseline)(hkls)) for z in charges])
+    formFactors = np.array([map(mapFunc, heat(z, baseline, latticeConst = latticeConst)(hkls)) for z in charges])
     #normTable = lambda x: np.array(map(lambda y: abs(y), x))
     #return map(normTable, formFactors)
     return formFactors
 
-def tableForm(charges, alkali = 'Li', halide = None, hkls = hklList, extracol = None, mode = 'amplitude'):
+def tableForm(charges, alkali = 'Li', halide = None, hkls = hklList, extracol = None, mode = 'amplitude', latticeConst = 1):
     if halide is None:
         print "computing scattering amplitudes for fcc structure with single-atom basis"
-    f_hkls = normHKLs(charges, alkali = alkali, halide = halide, hkls = hkls, mode = mode)
+    f_hkls = normHKLs(charges, alkali = alkali, halide = halide, hkls = hkls, mode = mode, latticeConst = latticeConst)
     hklstrlist = hklString(hkls)
     if extracol != None:
         return np.array(zip(*np.vstack((hklstrlist, f_hkls, extracol))))
