@@ -27,6 +27,12 @@ from pathos import multiprocessing
 #    else:
 #        return accumulator(func, func(accum, lst[0]), lst[1:])
 
+def resource_f(pkg_name, fpath):
+    return StringIO(pkg_resources.resource_string(pkg_name, fpath))
+
+def resource_path(pkg_name, fpath):
+    return pkg_resources.resource_filename(pkg_name, fpath)
+
 def parallelmap(func, data, nodes = None):
     """
     Return the averaged signal and background (based on blank frames) over the given runs
