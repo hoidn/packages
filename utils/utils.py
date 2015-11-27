@@ -8,6 +8,9 @@ import hashlib
 from pathos.multiprocessing import ProcessingPool
 from pathos import multiprocessing
 
+# TODO: requires multiprocess IN ADDITION TO PATHOS. Add this as a
+# dependency to setup.py
+
 #import signal
 #import sys
 #import time

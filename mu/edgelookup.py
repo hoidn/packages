@@ -8,7 +8,7 @@ def edge_energy(atomicN):
     if os.name == 'nt':
         path = 'E:\\Dropbox\\Seidler_Lab\\physical_data\\edges.dat'
     else:
-        path = '/home/oliver/Dropbox/Seidler_Lab/physical_data/edges.dat'
+        path =  '/media/sf_data/seidler_1511/packages/mu/data/edges.dat'
     if (not type(atomicN) == int) or (atomicN < 4):
         raise ValueError('invalid atomic number: ' + str(atomicN))
     tab = np.genfromtxt(path)

@@ -230,11 +230,13 @@ def getElementFluorescence(element):
     fluoDat = getAllFluorescence()
     return filter(lambda x : x[0] == element, zip(*fluoDat))
 
+# TODO: make this non-dependent on absolute paths
 def getElementDensities(): 
     if os.name == 'nt':
         elementDatDir = 'E:\\Dropbox\\Seidler_Lab\\physical_data\\elementDensities.csv'
     else:
-        elementDatDir = '/home/oliver/Dropbox/Seidler_Lab/physical_data/elementDensities.csv'
+        #elementDatDir = '/home/oliver/Dropbox/Seidler_Lab/physical_data/elementDensities.csv'
+        elementDatDir = '/media/sf_data/seidler_1511/packages/mu/data/elementDensities.csv'
     f = open(elementDatDir, 'r')
     dat = np.genfromtxt(f, dtype = (int, np.dtype('S5'), float), delimiter = ',')
     return dat
@@ -246,7 +248,8 @@ def get_Z_elementname_map():
     if os.name == 'nt':
         elementNamesf = 'E:\\Dropbox\\Seidler_Lab\\physical_data\\elementNames.csv'
     else:
-        elementNamesf = '/home/oliver/Dropbox/Seidler_Lab/physical_data/elementNames.csv'
+        #elementNamesf = '/home/oliver/Dropbox/Seidler_Lab/physical_data/elementNames.csv'
+        elementNamesf =  '/media/sf_data/seidler_1511/packages/mu/data/elementNames.csv'
     elementLabels = np.genfromtxt(elementNamesf, dtype = (np.dtype('S10'), np.dtype('S10')))
     ztoa = {int(k): v for k, v in elementLabels}
     return ztoa
@@ -289,8 +292,10 @@ def alphaBetaBranch(element):
         elementNamesf = 'E:\\Dropbox\\Seidler_Lab\\physical_data\\elementNames.csv'
         dat = np.genfromtxt('E:\\Dropbox\\Seidler_Lab\\physical_data\\transition_metal_branching_ratios.txt', dtype = (float, int,  np.dtype('S4'), float))
     else:
-        elementNamesf = '/home/oliver/Dropbox/Seidler_Lab/physical_data/elementNames.csv'
-        dat = np.genfromtxt('/home/oliver/Dropbox/Seidler_Lab/physical_data/transition_metal_branching_ratios.txt', dtype = (float, int,  np.dtype('S4'), float))
+        elementNamesf = '/media/sf_data/seidler_1511/packages/mu/data/elementNames.csv'
+        #dat = np.genfromtxt('/home/oliver/Dropbox/Seidler_Lab/physical_data/transition_metal_branching_ratios.txt', dtype = (float, int,  np.dtype('S4'), float))
+        dat = np.genfromtxt('/media/sf_data/seidler_1511/packages/mu/data/transition_metal_branching_ratios.txt', dtype = (float, int,  np.dtype('S4'), float))
+
         
 #    elementLabels = np.genfromtxt(elementNamesf, dtype = (np.dtype('S5'), np.dtype('S5')))
     elementLabels = np.genfromtxt(elementNamesf, dtype = (np.dtype('S10'), np.dtype('S10')))
