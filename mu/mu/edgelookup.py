@@ -1,14 +1,13 @@
 #look up k edge energies from edges.dat
 import os
 import numpy as np
+from utils import utils
 
+PKG_NAME = __name__.split(u'.')[0]
 
 def edge_energy(atomicN):
     """return energy in units of eV"""
-    if os.name == 'nt':
-        path = 'E:\\Dropbox\\Seidler_Lab\\physical_data\\edges.dat'
-    else:
-        path =  '/media/sf_data/seidler_1511/packages/mu/data/edges.dat'
+    path =  utils.resource_path('data/edges.dat', pkg_name = PKG_NAME)
     if (not type(atomicN) == int) or (atomicN < 4):
         raise ValueError('invalid atomic number: ' + str(atomicN))
     tab = np.genfromtxt(path)

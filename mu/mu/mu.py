@@ -1,13 +1,14 @@
 import re
-import ipdb
 import os
 from StringIO import StringIO
 import numpy as np
 from scipy.interpolate import interp1d
 import urllib
-import utils
+from utils import utils
 
 import edgelookup
+
+PKG_NAME = __name__.split(u'.')[0]
 
 #class to store info on single fluorescence line
 class Fluorescence: 
@@ -232,11 +233,7 @@ def getElementFluorescence(element):
 
 # TODO: make this non-dependent on absolute paths
 def getElementDensities(): 
-    if os.name == 'nt':
-        elementDatDir = 'E:\\Dropbox\\Seidler_Lab\\physical_data\\elementDensities.csv'
-    else:
-        #elementDatDir = '/home/oliver/Dropbox/Seidler_Lab/physical_data/elementDensities.csv'
-        elementDatDir = '/media/sf_data/seidler_1511/packages/mu/data/elementDensities.csv'
+    elementDatDir = utils.resource_path('data/elementDensities.csv', pkg_name = PKG_NAME)
     f = open(elementDatDir, 'r')
     dat = np.genfromtxt(f, dtype = (int, np.dtype('S5'), float), delimiter = ',')
     return dat
@@ -245,11 +242,7 @@ def getElementDensity(element):
     return  filter(lambda x : x[1] == element, getElementDensities())[0]
 
 def get_Z_elementname_map():
-    if os.name == 'nt':
-        elementNamesf = 'E:\\Dropbox\\Seidler_Lab\\physical_data\\elementNames.csv'
-    else:
-        #elementNamesf = '/home/oliver/Dropbox/Seidler_Lab/physical_data/elementNames.csv'
-        elementNamesf =  '/media/sf_data/seidler_1511/packages/mu/data/elementNames.csv'
+    elementNamesf =  utils.resource_path('data/elementNames.csv', pkg_name = PKG_NAME)
     elementLabels = np.genfromtxt(elementNamesf, dtype = (np.dtype('S10'), np.dtype('S10')))
     ztoa = {int(k): v for k, v in elementLabels}
     return ztoa
@@ -288,16 +281,10 @@ def Kbranch(element):
 
 
 def alphaBetaBranch(element): 
-    if os.name == 'nt':
-        elementNamesf = 'E:\\Dropbox\\Seidler_Lab\\physical_data\\elementNames.csv'
-        dat = np.genfromtxt('E:\\Dropbox\\Seidler_Lab\\physical_data\\transition_metal_branching_ratios.txt', dtype = (float, int,  np.dtype('S4'), float))
-    else:
-        elementNamesf = '/media/sf_data/seidler_1511/packages/mu/data/elementNames.csv'
-        #dat = np.genfromtxt('/home/oliver/Dropbox/Seidler_Lab/physical_data/transition_metal_branching_ratios.txt', dtype = (float, int,  np.dtype('S4'), float))
-        dat = np.genfromtxt('/media/sf_data/seidler_1511/packages/mu/data/transition_metal_branching_ratios.txt', dtype = (float, int,  np.dtype('S4'), float))
-
+    elementNamesf = utils.resource_path('data/elementNames.csv', pkg_name = PKG_NAME)
+    dat = np.genfromtxt(utils.resource_path('data/transition_metal_branching_ratios.txt', pkg_name = PKG_NAME),
+        dtype = (float, int,  np.dtype('S4'), float))
         
-#    elementLabels = np.genfromtxt(elementNamesf, dtype = (np.dtype('S5'), np.dtype('S5')))
     elementLabels = np.genfromtxt(elementNamesf, dtype = (np.dtype('S10'), np.dtype('S10')))
     extractedLabel = filter(lambda x : element == x[1], elementLabels)
     if len(extractedLabel) == 0: 
@@ -306,7 +293,6 @@ def alphaBetaBranch(element):
     atomicN = int(extractedLabel[0][0])
     fLines = filter(lambda x : x[1] == atomicN, dat)
     return fLines
-#    extracted = filter(lambda x : element == x[
 
 def volumeToMassFractions(alldensities, allelements, elements, volFs):
     indices = np.searchsorted(allelements, elements)

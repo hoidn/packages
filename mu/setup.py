@@ -1,10 +1,9 @@
-#from distutils.core import setup
-from setuptools import setup 
+from setuptools import setup, find_packages
 
-setup(name='mu',
-    version='1.0',
-    #package_dir = {'': '.'},
-    package_data = {'mu': 'data/*'},
-    py_modules=['mu', 'edgelookup'],
-    #packages = ['']
-    )
+setup(name = 'mu',
+    packages = find_packages('.'),
+    package_dir = {'mu': 'mu'},
+    package_data = {'mu': ['data/*']},
+    zip_safe = False)
+
+
