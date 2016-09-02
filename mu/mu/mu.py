@@ -1,14 +1,15 @@
 import re
 import os
-from StringIO import StringIO
+from io import StringIO
 import numpy as np
 from scipy.interpolate import interp1d
-import urllib
+import urllib.request, urllib.parse, urllib.error
 from utils import utils
 
-import edgelookup
+from io import BytesIO
+from . import edgelookup
 
-PKG_NAME = __name__.split(u'.')[0]
+PKG_NAME = __name__.split('.')[0]
 
 #class to store info on single fluorescence line
 class Fluorescence: 
@@ -100,7 +101,7 @@ def getSigma(element, eMin, eMax, interp = True):
     """Get sigma(E), (units eV for E, 1/cm for sigma) for element from FFAST
        database. Returns an interpolation function by default. 
     """
-    energy, f1, f2, photo, allscatter, total, kphoto, lambd = np.array(zip(*getFFAST(element, eMin, eMax)))
+    energy, f1, f2, photo, allscatter, total, kphoto, lambd = np.array(list(zip(*getFFAST(element, eMin, eMax))))
     energy = 1000. * energy
     if interp: 
         return utils.extrap1d(interp1d(energy, total))
@@ -113,15 +114,15 @@ def getFFAST(element, eMin, eMax):
     #template URL for FFAST data
     template = "http://physics.nist.gov/cgi-bin/ffast/ffast.pl?&Formula=<name>\
 &gtype=4&range=S&lower=<emin>&upper=<emax>"
-    [eMin, eMax] = map(lambda x: str(int(x/1000)), [eMin, eMax])
+    [eMin, eMax] = [str(int(x/1000)) for x in [eMin, eMax]]
     url = replaceAll({'<name>': element, '<emin>': eMin, '<emax>': eMax}, template)
-    f = urllib.urlopen(url)
-    s = f.read()
+    f = urllib.request.urlopen(url)
+    s = f.read().decode('ascii')
     f.close()
     datpat = re.compile('.*nm\\n(.*?)\\n<.*$', re.DOTALL)
     datsearch = re.search(datpat, s)
     datstring = datsearch.group(1)
-    datls = np.genfromtxt(StringIO(datstring), dtype = float)
+    datls = np.genfromtxt(BytesIO(datstring.encode()), dtype = float)
     return datls
 
 def replaceAll(rep, text): 
@@ -129,8 +130,8 @@ def replaceAll(rep, text):
     substitute regexes in the text according to the rules given by the
     dictionary rep. 
     """
-    rep = dict((re.escape(k), v) for k, v in rep.iteritems())
-    pattern = re.compile("|".join(rep.keys()))
+    rep = dict((re.escape(k), v) for k, v in rep.items())
+    pattern = re.compile("|".join(list(rep.keys())))
     text = pattern.sub(lambda m: rep[re.escape(m.group(0))], text)
     return text
 
@@ -205,12 +206,12 @@ def get1s(element, eMin, eMax, atomicN, interp = False):
     KEnergy = edgelookup.edge_energy(atomicN)
     energies = sigmaofE[0]
     diffs = energies - KEnergy
-    diffs = map(lambda x: x if x > 0 else np.inf, diffs)
+    diffs = [x if x > 0 else np.inf for x in diffs]
     edgeIndx = diffs.index(min(diffs))
     [EPreEdge, sigmaPreEdge] = [sigmaofE[0][edgeIndx - 1], sigmaofE[1][edgeIndx - 1]]
     
     subMu = sigmaPreEdge * (EPreEdge**3)/((energies)**3)
-    sigma1s = zip(energies, sigmaofE[1] - subMu)
+    sigma1s = list(zip(energies, sigmaofE[1] - subMu))
     sigma1s = [0 if pair[0] < EPreEdge else pair[1] for pair in sigma1s]
 
     if interp: 
@@ -224,27 +225,27 @@ def getAllFluorescence():
     edgedat = edgedatf.read()
     edgedat = replaceAll({'KL3':'ka1', 'KM3':'kb1'}, edgedat)
     edgetbl = np.genfromtxt(StringIO(edgedat), delimiter='\t', dtype = (np.dtype('S100'), float, np.dtype('S100'), float, float, float, float, float, np.dtype('S100')))
-    element, junk1, line, theoryE, junk2, experimentE, junk5, junk6, shell = zip(*edgetbl)
+    element, junk1, line, theoryE, junk2, experimentE, junk5, junk6, shell = list(zip(*edgetbl))
     return [element, experimentE, line]
 
 def getElementFluorescence(element): 
     fluoDat = getAllFluorescence()
-    return filter(lambda x : x[0] == element, zip(*fluoDat))
+    return [x for x in zip(*fluoDat) if x[0] == element]
 
 # TODO: make this non-dependent on absolute paths
 def getElementDensities(): 
     elementDatDir = utils.resource_path('data/elementDensities.csv', pkg_name = PKG_NAME)
-    f = open(elementDatDir, 'r')
-    dat = np.genfromtxt(f, dtype = (int, np.dtype('S5'), float), delimiter = ',')
-    return dat
+    dat = np.genfromtxt(elementDatDir, dtype = (int, np.dtype('S5'), float), delimiter = ',')
+    return [(r[0], r[1].decode('ascii'), r[2]) for r in dat]
+    #return dat
 
 def getElementDensity(element): 
-    return  filter(lambda x : x[1] == element, getElementDensities())[0]
+    return  list(filter(lambda x : x[1] == element, getElementDensities()))[0]
 
 def get_Z_elementname_map():
     elementNamesf =  utils.resource_path('data/elementNames.csv', pkg_name = PKG_NAME)
     elementLabels = np.genfromtxt(elementNamesf, dtype = (np.dtype('S10'), np.dtype('S10')))
-    ztoa = {int(k): v for k, v in elementLabels}
+    ztoa = {int(k): v.decode('ascii') for k, v in elementLabels}
     return ztoa
 
 def getElementName(atomicN): 
@@ -256,7 +257,7 @@ def getElementName(atomicN):
  
 def getZ(elementName):
     ztoa = get_Z_elementname_map()
-    atoz = {v: k for k, v in ztoa.items()}
+    atoz = {v: k for k, v in list(ztoa.items())}
     try:
         return atoz[elementName]
     except KeyError:
@@ -269,7 +270,7 @@ def getZ(elementName):
 def Kbranch(element): 
     branchRatioTemplate = 'http://csrri.iit.edu/cgi-bin/period-form?ener=&name=<name>'
     url = replaceAll({'<name>': element}, branchRatioTemplate)
-    f = urllib.urlopen(url)
+    f = urllib.request.urlopen(url)
     htmltxt = f.read()
     patt = re.compile('Fluorescence<br>yield</br></caption>\\n <tr><th align=left>K</th><td> *([\.0-9]*).*', re.DOTALL)
     patt2 = re.compile('Edge Energies<br>\(keV\)</br></caption>\\n <tr><th align=left>K</th><td> *([\.0-9]*).*')
@@ -286,12 +287,13 @@ def alphaBetaBranch(element):
         dtype = (float, int,  np.dtype('S4'), float))
         
     elementLabels = np.genfromtxt(elementNamesf, dtype = (np.dtype('S10'), np.dtype('S10')))
-    extractedLabel = filter(lambda x : element == x[1], elementLabels)
+    elementLabels = [(x[0].decode('ascii'), x[1].decode('ascii')) for x in elementLabels]
+    extractedLabel = [x for x in elementLabels if element == x[1]]
     if len(extractedLabel) == 0: 
         raise ValueError("Element " + element + "not found. Valid keys \
             are: ")
     atomicN = int(extractedLabel[0][0])
-    fLines = filter(lambda x : x[1] == atomicN, dat)
+    fLines = [x for x in dat if x[1] == atomicN]
     return fLines
 
 def volumeToMassFractions(alldensities, allelements, elements, volFs):
