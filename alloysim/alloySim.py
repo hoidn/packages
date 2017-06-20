@@ -75,7 +75,7 @@ class AlloySim:
         #sample thickness in cm
         self.thickness = thickness
         #density of the alloy
-        self.cumulativeDensity = [np.array(self.fractionsDict.values()) * np.array([elem.density for elem in self.dataDict.values()])][0]
+        self.cumulativeDensity = [np.array(list(self.fractionsDict.values())) * np.array([elem.density for elem in list(self.dataDict.values())])][0]
         eGrid = np.linspace(eMin, eMax, AlloySim.GRIDPOINTS)
         muTot = np.linspace(0, 0, AlloySim.GRIDPOINTS)
         
@@ -92,14 +92,14 @@ class AlloySim:
         #totalMu = float(self.muTot(energy)) * meanDensity
         totalMu = float(self.muTot(energy)) 
         #TODO: use size kwarg for np.random.exponential
-        interactionLengths = [np.random.exponential(1/totalMu, 1)[0] for i in xrange(num)]
+        interactionLengths = [np.random.exponential(1/totalMu, 1)[0] for i in range(num)]
         return interactionLengths
 
 
     def sampEnergies(self, energy): 
         ipdb.set_trace()
         assert energy > self.eMin and energy < self.eMax, "energy out of range"
-        alloys = self.dataDict.values()
+        alloys = list(self.dataDict.values())
 
         #mu in units 1/cm for all alloy components, multiplied by the composition fraction of each acomponent
         weights = (np.array([float(alloy.muCached(energy)) for  alloy in alloys]) * np.array(self.cumulativeDensity))
@@ -118,7 +118,7 @@ class AlloySim:
         #photBranchesTot = [float(list(accumu(element))[-1]) for element in photonBranches]
         photBranchesTot = [float(np.sum(element)) for element in photonBranches]
         #normalized to sum to 1
-        photonBranches = [np.array(photonBranches[i])/photBranchesTot[i] for i in xrange(len(photonBranches))]
+        photonBranches = [np.array(photonBranches[i])/photBranchesTot[i] for i in range(len(photonBranches))]
 
         #energies of Ka2, Ka1, and Kb for each alloy component
         energyChoices = self.getABenergies(sort = False)
@@ -152,11 +152,11 @@ class AlloySim:
             atomic number. 
         """
         #pdb.set_trace()
-        keylist = self.dataDict.keys()
+        keylist = list(self.dataDict.keys())
         if sort: 
             keylist.sort()
         values = [self.dataDict[k] for k in keylist]
-        energies = [map(lambda x: x.energy, val.fDict.values()) for val in values]
+        energies = [[x.energy for x in list(val.fDict.values())] for val in values]
         if mode == 'flat': 
             newEnergies = []
             for elem in energies: 
@@ -196,7 +196,7 @@ class AlloySim:
         #make eIncident callable if it isn't 
         if not hasattr(eIncident, '__call__'):
             eIncident = lambda: eIncident
-        for i in xrange(nPhotons):
+        for i in range(nPhotons):
             newPhoton = Photon(eIncident, direction = np.array([0, 0, -1]))
             photons += [newPhoton]
         
@@ -235,7 +235,7 @@ def getABratio(elDatList):
 
         elDatList is a list of ElementData objects
     """
-    probs = [map(lambda x: x.intensity, eldat.fDict.values()) for eldat in elDatList]
+    probs = [[x.intensity for x in list(eldat.fDict.values())] for eldat in elDatList]
     return probs
 
 def getABenergies(elDatList, mode = 'normal'):
@@ -247,7 +247,7 @@ def getABenergies(elDatList, mode = 'normal'):
         mode = 'normal': return list of depth 2. 
         mode = 'flat': return flattened list
     """
-    energies = [map(lambda x: x.energy, eldat.fDict.values()) for eldat in elDatList]
+    energies = [[x.energy for x in list(eldat.fDict.values())] for eldat in elDatList]
     if mode == 'flat': 
         newEnergies = []
         for elem in energies: 
@@ -328,7 +328,7 @@ def tallyUnique(energy, energies, sim):
     energies = list(energies)
     uniqE =  sim.getABenergies(mode = 'flat') + [0, energy]
     #make a tally
-    counts = map(energies.count, uniqE)
+    counts = list(map(energies.count, uniqE))
     return [uniqE, counts]
    
 

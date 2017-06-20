@@ -100,7 +100,7 @@ def hashable_dict(d):
     python buffer protocol by their sha1 hashes
     """
     #TODO: replace type check by check for object's bufferability
-    for k, v in d.iteritems():
+    for k, v in d.items():
         # for some reason ndarray.__hash__ is defined but is None! very strange
         #if (not isinstance(v, collections.Hashable)) or (not v.__hash__):
         if isinstance(v, np.ndarray):
@@ -138,8 +138,8 @@ def persist_to_file(file_name):
     def decorator(func):
         #check if function is a closure and if so construct a dict of its
         #bindings
-        if func.func_code.co_freevars:
-            closure_dict = hashable_dict(dict(zip(func.func_code.co_freevars, (c.cell_contents for c in func.func_closure))))
+        if func.__code__.co_freevars:
+            closure_dict = hashable_dict(dict(list(zip(func.__code__.co_freevars, (c.cell_contents for c in func.__closure__)))))
         else:
             closure_dict = {}
 
@@ -148,7 +148,7 @@ def persist_to_file(file_name):
             Based on args and kwargs of a function, as well as the 
             closure bindings, generate a cache lookup key
             """
-            return hashlib.sha1(dill.dumps(args)).hexdigest(), hashlib.sha1(dill.dumps(kwargs.items())).hexdigest(), hashlib.sha1(dill.dumps(closure_dict.items())).hexdigest() 
+            return hashlib.sha1(dill.dumps(args)).hexdigest(), hashlib.sha1(dill.dumps(list(kwargs.items()))).hexdigest(), hashlib.sha1(dill.dumps(list(closure_dict.items()))).hexdigest() 
 
         def compute(*args, **kwargs):
             key = gen_key(*args, **kwargs)
@@ -156,13 +156,13 @@ def persist_to_file(file_name):
                 try:
                     with open(file_name, 'r') as f:
                         to_load = dill.load(f)
-                        print "loading cache"
-                        for k, v in to_load.items():
+                        print("loading cache")
+                        for k, v in list(to_load.items()):
                             cache[k] = v
                 except (IOError, ValueError):
-                    print "no cache file found"
+                    print("no cache file found")
                 flag_cache_loaded()
-            if not key in cache.keys():
+            if not key in list(cache.keys()):
                 cache[key] = func(*args, **kwargs)
                 if not check_cache_changed():
                     # write cache to file at interpreter exit if it has been
@@ -174,7 +174,7 @@ def persist_to_file(file_name):
         def new_func(*args, **kwargs):
             # if the "flush" kwarg is passed, recompute regardless of whether
             # the result is cached
-            if "flush" in kwargs.keys():
+            if "flush" in list(kwargs.keys()):
                 kwargs.pop("flush", None)
                 key = gen_key(*args, **kwargs)
                 compute(key)
@@ -202,8 +202,8 @@ def eager_persist_to_file(file_name):
 
     def decorator(func):
         #check if function is a closure and if so construct a dict of its bindings
-        if func.func_code.co_freevars:
-            closure_dict = hashable_dict(dict(zip(func.func_code.co_freevars, (c.cell_contents for c in func.func_closure))))
+        if func.__code__.co_freevars:
+            closure_dict = hashable_dict(dict(list(zip(func.__code__.co_freevars, (c.cell_contents for c in func.__closure__)))))
         else:
             closure_dict = {}
 
@@ -212,7 +212,7 @@ def eager_persist_to_file(file_name):
             Based on args and kwargs of a function, as well as the 
             closure bindings, generate a cache lookup key
             """
-            return hashlib.sha1(dill.dumps(args)).hexdigest(), hashlib.sha1(dill.dumps(kwargs.items())).hexdigest(), hashlib.sha1(dill.dumps(closure_dict.items())).hexdigest() 
+            return hashlib.sha1(dill.dumps(args)).hexdigest(), hashlib.sha1(dill.dumps(list(kwargs.items()))).hexdigest(), hashlib.sha1(dill.dumps(list(closure_dict.items()))).hexdigest() 
 
         def compute(*args, **kwargs):
             local_cache = {}
@@ -231,13 +231,13 @@ def eager_persist_to_file(file_name):
             try:
                 with open(full_name, 'r') as f:
                     new_cache = dill.load(f)
-                    for k, v in new_cache.items():
+                    for k, v in list(new_cache.items()):
                         cache[k] = v
             except (IOError, ValueError):
-                print "no cache found"
+                print("no cache found")
             # if the "flush" kwarg is passed, recompute regardless of whether
             # the result is cached
-            if "flush" in kwargs.keys():
+            if "flush" in list(kwargs.keys()):
                 kwargs.pop("flush", None)
                 # TODO: refactor
                 compute(*args, file_name = full_name, **kwargs)

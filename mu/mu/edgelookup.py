@@ -3,7 +3,7 @@ import os
 import numpy as np
 from utils import utils
 
-PKG_NAME = __name__.split(u'.')[0]
+PKG_NAME = __name__.split('.')[0]
 
 def edge_energy(atomicN):
     """return energy in units of eV"""

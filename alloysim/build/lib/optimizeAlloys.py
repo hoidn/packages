@@ -7,12 +7,12 @@ from scipy.interpolate import interp1d
 import scipy.optimize as opt
 import alloySim
 import itertools
-import copy_reg
+import copyreg
 import types
 
 import multiprocessing
 #from multiprocessing import Process, Pipe
-from itertools import izip
+
 
 #TODO: the simulation chokes when incident energy is below that of the K edge in one or more of the constituent species
 #temporary fix: increase incident energy to 10 keV
@@ -25,7 +25,7 @@ def spawn(f):
 
 def parmap(f,X):
     pipe=[Pipe() for x in X]
-    proc=[Process(target=spawn(f),args=(c,x)) for x,(p,c) in izip(X,pipe)]
+    proc=[Process(target=spawn(f),args=(c,x)) for x,(p,c) in zip(X,pipe)]
     [p.start() for p in proc]
     [p.join() for p in proc]
     return [p.recv() for (p,c) in pipe]
@@ -72,24 +72,24 @@ def simAll(elements = [22,24,26,28,30], comboSizes = [2,3], fractDict = None, mo
             combinations = makeCombos(elements, comboSizes)
             allStartFracs = [[1./len(combo)] * len(combo) for combo in combinations]
         else: 
-            allStartFracs, combinations = fractDict.values(), map(lambda x: map(int, x), fractDict.keys())
+            allStartFracs, combinations = list(fractDict.values()), [list(map(int, x)) for x in list(fractDict.keys())]
             #histo = [binSim(elements, fracs, thickness = 0.0005, energy = 10000, num = num) for elements, fracs in zip(combinations, allStartFracs)]
             histo = [runAndTally(energy=energy, elements = elements, fractions = fracs, thickness = thickness, num = num, angmin = angleRange[0], angmax = angleRange[1]) for elements, fracs in zip(combinations, allStartFracs)]
         return histo
     elif mode =='optimize':
-        allStartFracs, combinations = fractDict.values(), map(lambda x: map(int, x), fractDict.keys())
-        allArgs = zip(map(list, allStartFracs), map(list, combinations))
+        allStartFracs, combinations = list(fractDict.values()), [list(map(int, x)) for x in list(fractDict.keys())]
+        allArgs = list(zip(list(map(list, allStartFracs)), list(map(list, combinations))))
         optima = pool.map(iterScoreTop, allArgs)
-        return zip(combinations, optima)
+        return list(zip(combinations, optima))
     else: 
-        print "mode " + mode + "unrecognized"
+        print("mode " + mode + "unrecognized")
 
 #TODO: find sensoble way of passing angle range argument
 def iterScoreTop(arguments, angleRange=(np.deg2rad(0), np.deg2rad(90)), target = None):
     result =  iterScore(arguments[0], arguments[1], angleRange=angleRange, \
             target = target)
-    print arguments[1]
-    print result
+    print(arguments[1])
+    print(result)
     return result
    
 #    for combo in combinations: 
@@ -110,7 +110,7 @@ def iterScore(startFractions, elements = [22,24,26], thickness = 0.0005, energy 
         try: 
             target = np.array(target)
         except:
-            raise ValueError, "target must be sequence with same shape as elements"
+            raise ValueError("target must be sequence with same shape as elements")
         else:
             kAlphas = kAlphas/target
     kaTot = np.sum(kAlphas)
@@ -223,8 +223,8 @@ def filterAngles(energies, directions, angmin=np.deg2rad(0), angmax=np.deg2rad(9
 
        energies and directions must be nump.ndarray
     """
-    energies = np.array(filter(None, energies))
-    directions = np.array(filter(lambda x: type(x) != type(None), directions))
+    energies = np.array([_f for _f in energies if _f])
+    directions = np.array([x for x in directions if type(x) != type(None)])
     directions = spherical(directions)
     return energies[np.logical_and(angmax > directions[:,1], directions[:,1] > angmin)]
 

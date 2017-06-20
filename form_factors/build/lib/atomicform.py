@@ -3,7 +3,7 @@ import csv
 import operator
 import ipdb
 import collections
-from StringIO import StringIO
+from io import StringIO
 import re
 import pkgutil
 
@@ -43,8 +43,8 @@ rawTable = np.genfromtxt(StringIO(rawStr), dtype=('S20', float, float, float, fl
 
 #elementKeys = rawTable[rawTable.dtype.names[0]]
 #numerical values of the table
-zipped = np.array(zip(*rawTable))
-elementKeys, values = zipped[0], zip(*zipped[1:])
+zipped = np.array(list(zip(*rawTable)))
+elementKeys, values = zipped[0], list(zip(*zipped[1:]))
 values = np.array(values, dtype=float)
 
 coeffDict = {k: v for (k, v) in zip(elementKeys, values)}
@@ -54,8 +54,8 @@ def getFofQ(k):
     return function that evaluates atomic form factor corresponding to the
     element/ion key, based on tabulated approximations.
     """
-    if not coeffDict.has_key(k):
-        raise ValueError, "valid keys are: " + str(coeffDict.keys())
+    if k not in coeffDict:
+        raise ValueError("valid keys are: " + str(list(coeffDict.keys())))
     a1, b1, a2, b2, a3, b3, a4, b4, c = coeffDict[k]
     def FofQ(q):
         singleQ = lambda x :  a1 * np.exp(-b1 * (x/(4 * np.pi))**2)  +\
@@ -63,7 +63,7 @@ def getFofQ(k):
              a3 * np.exp(-b3 * (x/(4 * np.pi))**2)  + \
              a4 * np.exp(-b4 * (x/(4 * np.pi))**2) + c
         if isinstance(q, collections.Iterable): 
-            return np.array(map(singleQ, q))
+            return np.array(list(map(singleQ, q)))
         else:
             return singleQ(q)
     return FofQ
@@ -84,10 +84,10 @@ def validCheck(qvec):
             qvec = [qvec]
         q11 = qvec[0][0]
     except:
-        raise ValueError, errmsg
+        raise ValueError(errmsg)
     else: 
         if  len(qvec[0]) != 3:
-            raise ValueError,errmsg
+            raise ValueError(errmsg)
     return qvec
 
 def gaussianCloud(charge, x, y, z, sigma):
@@ -101,7 +101,7 @@ def gaussianCloud(charge, x, y, z, sigma):
             np.exp(- 0.5 * sigma**2 * np.dot(qq, qq))
     def amplitude(qvec):
         qvec = validCheck(qvec)
-        return np.array(map(tomap, qvec))
+        return np.array(list(map(tomap, qvec)))
     return amplitude
 
 def fccStruct(a1, a2 = None, latticeConst = 1):
@@ -124,7 +124,7 @@ def fccStruct(a1, a2 = None, latticeConst = 1):
 
 def structFact(species, positions, latticeConst = 1):
     if latticeConst ==1:
-        print "Warning: defaulting to 1 Angstrom for lattice constant"
+        print("Warning: defaulting to 1 Angstrom for lattice constant")
     reciprocalLatticeConst = 2 * np.pi / latticeConst
     #form factor of a single species
     #q_hkl is momentum transfer magnitude in units of the 
@@ -132,11 +132,11 @@ def structFact(species, positions, latticeConst = 1):
     f = lambda q_hkl: getFofQ(species)(np.array(q_hkl) * reciprocalLatticeConst)
     #function to evaluate amplitude contribution of a single atom
     def oneatom(formfactor, positions):
-        return lambda qq: getPhase(positions, qq) * formfactor(map(np.linalg.norm, qq))
+        return lambda qq: getPhase(positions, qq) * formfactor(list(map(np.linalg.norm, qq)))
     #function to evaluate total amplitude for this strucure
     def amplitude(qvec):
         qvec = validCheck(qvec)
-        return np.sum( np.array(map(lambda x: oneatom(f, x)(qvec), positions)), axis = 0) 
+        return np.sum( np.array([oneatom(f, x)(qvec) for x in positions]), axis = 0) 
     return amplitude
 
 
@@ -148,7 +148,7 @@ def heat(qTransfer, structfact, donor = 'F', sigma = 0.05, latticeConst = 1):
     the locations of the donor species are assumed to be positions2
     """
     perBond = float(qTransfer)/len(bondingLocations)
-    gaussians = map(lambda x: gaussianCloud(perBond, x[0], x[1], x[2], sigma), bondingLocations)
+    gaussians = [gaussianCloud(perBond, x[0], x[1], x[2], sigma) for x in bondingLocations]
     donors = structFact(donor, positions2, latticeConst = latticeConst)
     donorCharge = donors([0, 0, 0])
     scale = float(qTransfer)/donorCharge
@@ -162,20 +162,20 @@ def normHKLs(charges, alkali = 'Li', halide = None, hkls = hklList, mode = 'ampl
         mapFunc = lambda x: round(abs(x), 2)
     elif mode =='intensity':
         mapFunc = lambda x: round(abs(x)**2, 2)
-    formFactors = np.array([map(mapFunc, heat(z, baseline, latticeConst = latticeConst)(hkls)) for z in charges])
+    formFactors = np.array([list(map(mapFunc, heat(z, baseline, latticeConst = latticeConst)(hkls))) for z in charges])
     #normTable = lambda x: np.array(map(lambda y: abs(y), x))
     #return map(normTable, formFactors)
     return formFactors
 
 def tableForm(charges, alkali = 'Li', halide = None, hkls = hklList, extracol = None, mode = 'amplitude', latticeConst = 1):
     if halide is None:
-        print "computing scattering amplitudes for fcc structure with single-atom basis"
+        print("computing scattering amplitudes for fcc structure with single-atom basis")
     f_hkls = normHKLs(charges, alkali = alkali, halide = halide, hkls = hkls, mode = mode, latticeConst = latticeConst)
     hklstrlist = hklString(hkls)
     if extracol != None:
-        return np.array(zip(*np.vstack((hklstrlist, f_hkls, extracol))))
+        return np.array(list(zip(*np.vstack((hklstrlist, f_hkls, extracol)))))
     else: 
-        return np.array(zip(*np.vstack((hklstrlist, f_hkls))))
+        return np.array(list(zip(*np.vstack((hklstrlist, f_hkls)))))
 
 #def hklPermutations(hmax):
 #    ipdb.set_trace()
@@ -216,10 +216,10 @@ def FCChkl(maxh, complement = False):
 def hklString(hkl):
     """string representation of list of three integers"""
     def stringify(x):
-        hklstr = map(str, x)
+        hklstr = list(map(str, x))
         return hklstr[0] + ';' + hklstr[1]  + ';' + hklstr[2]
     try: 
-        hklStringList = map(stringify, hkl)
+        hklStringList = list(map(stringify, hkl))
     except: 
         return stringify(hkl)
     else:
@@ -228,7 +228,7 @@ def hklString(hkl):
 def sortHKL(hkllist):
     """sort a list of hkls by momentum transfer"""
     def qTrans(hkl):
-        return sum(map(lambda x: x**2, hkl))
+        return sum([x**2 for x in hkl])
     return sorted(hkllist, key = qTrans)
 
 def depth(l):

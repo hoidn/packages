@@ -17,6 +17,6 @@ def extrap1d(interpolator):
             iter(xs)
         except TypeError:
             xs = np.array([xs])
-        return np.array(map(pointwise, np.array(xs)))
+        return np.array(list(map(pointwise, np.array(xs))))
 
     return ufunclike

@@ -130,7 +130,7 @@ def replaceAll(rep, text):
     substitute regexes in the text according to the rules given by the
     dictionary rep. 
     """
-    rep = dict((re.escape(k), v) for k, v in rep.items())
+    rep = dict((re.escape(k), v) for k, v in list(rep.items()))
     pattern = re.compile("|".join(list(rep.keys())))
     text = pattern.sub(lambda m: rep[re.escape(m.group(0))], text)
     return text
@@ -240,7 +240,7 @@ def getElementDensities():
     #return dat
 
 def getElementDensity(element): 
-    return  list(filter(lambda x : x[1] == element, getElementDensities()))[0]
+    return  list([x for x in getElementDensities() if x[1] == element])[0]
 
 def get_Z_elementname_map():
     elementNamesf =  utils.resource_path('data/elementNames.csv', pkg_name = PKG_NAME)
