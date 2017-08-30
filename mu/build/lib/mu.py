@@ -128,7 +128,7 @@ def replaceAll(rep, text):
     substitute regexes in the text according to the rules given by the
     dictionary rep. 
     """
-    rep = dict((re.escape(k), v) for k, v in rep.items())
+    rep = dict((re.escape(k), v) for k, v in list(rep.items()))
     pattern = re.compile("|".join(list(rep.keys())))
     text = pattern.sub(lambda m: rep[re.escape(m.group(0))], text)
     return text

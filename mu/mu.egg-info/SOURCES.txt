@@ -1,8 +1,13 @@
-edgelookup.py
-mu.py
-setup.cfg
 setup.py
+mu/__init__.py
+mu/edgelookup.py
+mu/mu.py
 mu.egg-info/PKG-INFO
 mu.egg-info/SOURCES.txt
 mu.egg-info/dependency_links.txt
+mu.egg-info/not-zip-safe
 mu.egg-info/top_level.txt
+mu/data/edges.dat
+mu/data/elementDensities.csv
+mu/data/elementNames.csv
+mu/data/transition_metal_branching_ratios.txt
